@@ -45,7 +45,7 @@ defmodule Makeup{{ cookiecutter.language_uppercase }}.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:makeup, "~> 0.4.0"},
+      {:makeup, "~> 0.5.0"},
       {:ex_doc, "~> 0.18.3", only: [:dev]},
     ]
   end
