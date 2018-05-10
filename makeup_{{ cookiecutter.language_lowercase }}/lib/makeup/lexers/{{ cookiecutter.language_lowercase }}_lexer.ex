@@ -3,6 +3,8 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
   Lexer for the {{ cookiecutter.language_uppercase }} language to be used
   with the Makeup package.
   """
+  @behaviour Makeup.Lexer
+
   import NimbleParsec
   import Makeup.Lexer.Combinators
   import Makeup.Lexer.Groups
@@ -28,7 +30,7 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
     |> concat(digits)
 
   number_float =
-    integer
+    number_integer
     |> string(".")
     |> concat(digits)
     |> optional(float_scientific_notation_part)
@@ -56,20 +58,23 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
 
   # Tag the tokens with the language name.
   # This makes it easier to postprocess files with multiple languages.
-  defp __as_{{ cookiecutter.language_lowercase }}_language__({ttype, meta, value}) do
+  @doc false
+  def __as_{{ cookiecutter.language_lowercase }}_language__({ttype, meta, value}) do
     {ttype, Map.put(meta, :language, :{{ cookiecutter.language_lowercase }}), value}
   end
 
   root_element_combinator =
     choice([
       whitespace,
+      # Parenthesis, etc. (these might be unnecessary)
+      parentheses,
+      straight_brackets,
+      curly_braces,
       # Numbers
       number_float,
       number_integer,
       # Variables
       variable,
-      # End of numbers
-      punctuation,
       # If we can't parse any of the above, we highlight the next character as an error
       # and proceed from there.
       # A lexer should always consume any string given as input.
@@ -86,7 +91,7 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
 
   @impl Makeup.Lexer
   defparsec :root_element,
-    root_element_combinator |> map({__MODULE__, :__as_{{ cookiecutter.language_lowercase }}_language__, []}),,
+    root_element_combinator |> map({__MODULE__, :__as_{{ cookiecutter.language_lowercase }}_language__, []}),
     inline: @inline
 
   @impl Makeup.Lexer
@@ -108,7 +113,7 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
   #######################################################################
 
   @impl Makeup.Lexer
-  defgroupmatcher :match_group, [
+  defgroupmatcher :match_groups, [
     parentheses: [
       open: [[{:punctuation, _, "("}]],
       close: [[{:punctuation, _, ")"}]]
@@ -140,8 +145,7 @@ defmodule Makeup.Lexers.{{ cookiecutter.language_uppercase }}Lexer do
     {:ok, tokens, "", _, _, _} = root(text)
 
     tokens
-    |> remove_initial_newline()
     |> postprocess()
-    |> group_matcher(group_prefix)
+    |> match_groups(group_prefix)
   end
 end
